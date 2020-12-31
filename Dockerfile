@@ -12,6 +12,17 @@ RUN mkdir -p /run/nginx
 EXPOSE 8080
 COPY docker/nginx/conf.d/app.conf /etc/nginx/nginx.conf
 
+RUN docker-php-ext-install mysqli pdo pdo_mysql && docker-php-ext-enable pdo_mysql
+
+# RUN set -e; docker-php-ext-install -j "$(nproc)" \
+#                  #coreutils \
+#                  gd soap bcmath mbstring iconv curl sockets \
+#                  opcache \
+#                  xsl \
+#                  mysqli pdo pdo_mysql \
+#                  zip \
+#                  zlib-dev
+
 ENTRYPOINT [ "/init" ]
 # RUN set -e; \
 #          apk add --no-cache \
@@ -35,14 +46,7 @@ ENTRYPOINT [ "/init" ]
 # RUN docker-php-ext-configure intl
 # RUN docker-php-ext-configure imap
 
-# RUN set -e; docker-php-ext-install -j "$(nproc)" \
-#                 gd soap imap bcmath mbstring iconv curl sockets \
-#                 opcache \
-#                 xsl \
-#                 exif \
-#                 mysqli pdo pdo_mysql \
-#                 intl \
-#                 zip
+
 
 # RUN mkdir -p /run/nginx
 

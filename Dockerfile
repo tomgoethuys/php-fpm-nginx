@@ -1,59 +1,17 @@
-FROM php:7.4-fpm-alpine
-
-# Adding our services to the S6 expected location
-COPY /docker/services.d /etc/services.d
-
-# Adding the S6 overlay
-ADD https://github.com/just-containers/s6-overlay/releases/download/v1.22.1.0/s6-overlay-amd64.tar.gz /tmp/
-RUN tar xzf /tmp/s6-overlay-amd64.tar.gz -C /
-
-RUN apk add --no-cache nginx
-RUN mkdir -p /run/nginx
-EXPOSE 8080
-COPY docker/nginx/conf.d/app.conf /etc/nginx/nginx.conf
-
-RUN docker-php-ext-install mysqli pdo pdo_mysql && docker-php-ext-enable pdo_mysql
-
-# RUN set -e; docker-php-ext-install -j "$(nproc)" \
-#                  #coreutils \
-#                  gd soap bcmath mbstring iconv curl sockets \
-#                  opcache \
-#                  xsl \
-#                  mysqli pdo pdo_mysql \
-#                  zip \
-#                  zlib-dev
-
-ENTRYPOINT [ "/init" ]
-# RUN set -e; \
-#          apk add --no-cache \
-#                 coreutils \
-#                 freetype-dev \
-#                 libjpeg-turbo-dev \
-#                 libjpeg-turbo \
-#                 libpng-dev \
-#                 libzip-dev \
-#                 jpeg-dev \
-#                 icu-dev \
-#                 zlib-dev \
-#                 curl-dev \
-#                 imap-dev \
-#                 libxslt-dev libxml2-dev \
-#                 libgcrypt-dev \
-#                 oniguruma-dev \
-#                 redis
-
-# RUN docker-php-ext-configure gd --with-freetype --with-jpeg
-# RUN docker-php-ext-configure intl
-# RUN docker-php-ext-configure imap
-
-
-
-# RUN mkdir -p /run/nginx
-
-# COPY docker/ /docker/
-# COPY docker/nginx/conf.d/app.conf /etc/nginx/nginx.conf
-# COPY docker/supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-
-#CMD nginx && php-fpm
-#ENTRYPOINT ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
-# CMD sh /docker/startup-api.sh
+FROM php:7.4-apache
+RUN apt-get update
+RUN apt-get install -y libzip-dev zip git libpng-dev libwebp-dev libjpeg62-turbo-dev libfreetype6-dev && docker-php-ext-install zip mysqli pdo pdo_mysql opcache
+RUN docker-php-ext-configure gd --enable-gd --with-freetype --with-jpeg --with-webp && docker-php-ext-install gd
+RUN a2enmod rewrite
+run mkdir ~/.ssh
+RUN ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts 
+RUN chown -R www-data:www-data /var/www
+COPY docker/apache/000-default.conf /etc/apache2/sites-available/000-default.conf
+COPY docker/php/settings.ini /usr/local/etc/php/conf.d/settings.ini
+RUN sed -i 's/80/${PORT}/g' /etc/apache2/sites-available/000-default.conf /etc/apache2/ports.conf
+RUN sed "s/upload_max_filesize = .*/upload_max_filesize = 100M/" /usr/local/etc/php/php.ini-development
+RUN sed "s/upload_max_filesize = .*/upload_max_filesize = 100M/" /usr/local/etc/php/php.ini-production
+RUN curl http://getcomposer.org/download/1.10.15/composer.phar --output composer.phar && chmod a+x composer.phar && mv composer.phar /usr/local/bin/composer && /usr/local/bin/composer global require hirak/prestissimo
+#docker build -t smooty . --no-cache
+#docker tag f98197e09dc9 tgoethuys/php-fpm7.4-nginx:latest
+#docker push tgoethuys/php-fpm7.4-nginx:latest

@@ -1,4 +1,5 @@
 #!/usr/bin/with-contenv sh
 
 su www-data
-exec /usr/local/sbin/php-fpm --nodaemonize
+exec /usr/local/sbin/php-fpm -g /tmp/php-fpm.pid -D
+exec wait $(cat /tmp/php-fpm.pid) exit 0
